@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
+<title>150K Combine Tracker</title>
+<link rel="icon" href="icons/icon-32.png" sizes="32x32">
+<link rel="icon" href="icons/icon-512.png" sizes="512x512">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Saira+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  color-scheme:dark;
+  --green:#00E676;
+  --red:#FF3B30;
+  --amber:#FFB02E;
+  --dim:rgba(255,255,255,.55);
+  --dimmer:rgba(255,255,255,.22);
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --cond:"Saira Condensed","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:#000;height:100%;overflow:hidden}
+.pager,.page,.scroll,.footer,.gauge,.scale,.qcard,.field{background:#000}
+body{font-family:var(--cond);color:#fff;-webkit-font-smoothing:antialiased;-webkit-user-select:none;user-select:none}
+input{-webkit-user-select:text;user-select:text}
+
+
+/* ---------- deck (vertical: landing -> app) ---------- */
+.deck{height:100dvh;height:100vh;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;background:#000}
+.deck::-webkit-scrollbar{display:none}
+.screen{height:100dvh;height:100vh;width:100%;scroll-snap-align:start;scroll-snap-stop:always}
+.screen.app{overflow:hidden}
+
+/* ---------- landing ---------- */
+.landing{position:relative;--pg:#22B14C;--pr:#E32227;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:calc(env(safe-area-inset-top) + 22px) 20px calc(env(safe-area-inset-bottom) + 22px)}
+.poster{width:100%;max-width:420px;background:#fff;border-radius:3px;
+  padding:26px 24px 30px;display:flex;flex-direction:column;gap:26px;
+  box-shadow:0 0 0 12px #fff,0 26px 60px rgba(255,255,255,.09)}
+.chart{width:100%;height:auto;display:block}
+.quote{font-family:"Anton","Saira Condensed",Arial,sans-serif;color:#000;margin:0;
+  font-size:clamp(25px,7.4vw,37px);line-height:1.06;text-transform:uppercase;letter-spacing:.005em}
+.enter{position:absolute;bottom:calc(env(safe-area-inset-bottom) + 26px);
+  background:none;border:none;color:rgba(255,255,255,.7);font-family:var(--cond);
+  font-size:11px;font-weight:600;letter-spacing:.28em;text-transform:uppercase;
+  display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer}
+.enter .chev{display:block;width:22px;height:22px;animation:rise 1.9s ease-in-out infinite}
+.enter svg{width:100%;height:100%}
+@keyframes rise{0%,100%{transform:translateY(4px);opacity:.45}50%{transform:translateY(-3px);opacity:1}}
+@media (prefers-reduced-motion:reduce){.enter .chev{animation:none}}
+
+.pager{display:flex;height:100dvh;height:100vh;width:100%;overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.pager::-webkit-scrollbar{display:none}
+.page{flex:0 0 100%;width:100%;height:100%;scroll-snap-align:center;
+  padding:calc(env(safe-area-inset-top) + 12px) 18px calc(env(safe-area-inset-bottom) + 24px);
+  display:flex;flex-direction:column}
+.dots{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 7px);
+  display:flex;gap:7px;justify-content:center;pointer-events:none;z-index:5}
+.dots{opacity:0;transition:opacity .3s}
+.dots.on{opacity:1}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--dimmer)}
+.dot.on{background:#fff}
+
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.26em;text-transform:uppercase;color:var(--dim)}
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.eyebrow.acct{margin-top:5px;letter-spacing:.18em}
+.eyebrow.acct b{color:#fff;font-weight:700}
+.hint{display:none;position:absolute;left:10px;right:10px;top:30%;text-align:center;color:#000;
+  font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;line-height:1.35}
+.gpage.none .hint{display:block}
+
+/* ---------- gauge ---------- */
+.gauge{flex:1;min-height:0;display:grid;grid-template-columns:50px minmax(88px,116px) 44px 44px;
+  justify-content:center;align-items:stretch;gap:10px;margin:14px 0 16px}
+.gauge.noweeks{grid-template-columns:50px minmax(88px,116px) 50px}
+.gpage.net .fRow{display:none}
+.cell{display:flex;flex-direction:column;align-items:center}
+.cap{width:36%;height:13px;border:5px solid #fff;border-bottom:none;border-radius:5px 5px 0 0;background:#fff}
+.shell{position:relative;flex:1;width:100%;border:5px solid #fff;border-radius:18px;background:#fff}
+.inner{position:absolute;inset:0;border-radius:12px;overflow:hidden;background:#fff}
+.fill{position:absolute;left:0;right:0;height:0;transition:height .8s cubic-bezier(.22,.9,.28,1)}
+.inner{--zero:66.6667%}
+.fill.pos{bottom:calc(100% - var(--zero));background:var(--green)}
+.fill.neg{top:var(--zero);background:var(--red)}
+.zero{position:absolute;left:0;right:0;top:var(--zero);height:0;border-top:2px dashed rgba(0,0,0,.6);transform:translateY(-1px)}
+.maxline{position:absolute;left:0;right:0;height:0;border-top:3px dotted #C8971A;
+  transform:translateY(-1.5px);transition:top .8s cubic-bezier(.22,.9,.28,1);z-index:3}
+
+.scale{position:relative;height:calc(100% - 23px);margin-top:18px}
+.tick{position:absolute;left:0;right:0;height:0;transform:translateY(-50%)}
+.tick .rule{position:absolute;top:0;height:1px;background:var(--dimmer)}
+.tick.major .rule{background:rgba(255,255,255,.65)}
+.tick label{position:absolute;top:50%;transform:translateY(-50%);font-family:var(--mono);
+  font-size:9px;font-weight:500;color:var(--dim);white-space:nowrap;line-height:1}
+.tick.major label{color:#fff;font-weight:600;font-size:10.5px}
+.scaleL .tick .rule{right:0;width:7px}
+.scaleL .tick.major .rule{width:12px}
+.scaleL .tick label{right:16px}
+.scaleR .tick .rule{left:0;width:7px}
+.scaleR .tick.major .rule{width:12px}
+.scaleR .tick label{left:16px;font-family:var(--cond);font-size:11px;letter-spacing:.08em;font-weight:600}
+.scaleR .tick.now label{color:var(--amber)}
+.scaleR .tick.now .rule{background:var(--amber);width:12px}
+.scaleR::before{content:attr(data-title);position:absolute;top:-18px;left:0;font-family:var(--cond);
+  font-size:10px;letter-spacing:.12em;font-weight:700;color:var(--dim);white-space:nowrap}
+
+/* ---------- page 1 footer ---------- */
+.footer{border-top:1px solid var(--dimmer);padding-top:14px}
+.fLabel{font-size:10px;letter-spacing:.26em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.fBig{font-family:var(--mono);font-size:42px;font-weight:600;line-height:1;letter-spacing:-.035em;
+  font-variant-numeric:tabular-nums;margin-top:5px}
+.fBig.up{color:var(--green)}.fBig.down{color:var(--red)}.fBig.flat{color:#fff}
+.fRow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;gap:10px}
+.fCell .k{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.fCell .v{font-family:var(--mono);font-size:17px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
+.v.amber{color:var(--amber)}.v.gold{color:#E0AE22}.v.green{color:var(--green)}.v.red{color:var(--red)}
+
+/* ---------- page 2 ---------- */
+.p2title{font-size:27px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;margin:4px 0 16px}
+.scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:24px}
+.scroll::-webkit-scrollbar{display:none}
+.field{margin-bottom:18px}
+.label{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--dim);font-weight:600;margin-bottom:8px}
+input[type=date],input[type=text]{width:100%;background:#000;color:#fff;border:2px solid rgba(255,255,255,.6);
+  border-radius:10px;padding:13px 14px;font-family:var(--mono);font-size:17px;font-weight:500;appearance:none;outline:none}
+input:focus{border-color:#fff}
+input::placeholder{color:rgba(255,255,255,.35)}
+select{width:100%;background:#000;color:#fff;border:2px solid rgba(255,255,255,.6);border-radius:10px;
+  padding:13px 14px;font-family:var(--mono);font-size:17px;font-weight:500;outline:none;color-scheme:dark}
+select:focus{border-color:#fff}
+.mini{flex:0 0 auto;padding:0 18px;border-radius:10px;border:none;background:#fff;color:#000;
+  font-family:var(--cond);font-size:14px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;cursor:pointer}
+.danger{width:100%;margin-top:9px;padding:11px;border-radius:10px;border:2px solid var(--red);background:#000;
+  color:var(--red);font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;cursor:pointer}
+.danger:disabled,.mini:disabled{opacity:.35;cursor:default}
+input[type=date]{color-scheme:dark}
+input[type=date]::-webkit-date-and-time-value{text-align:left;color:#fff}
+input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.75}
+.amount{display:flex;gap:9px}
+.sign{flex:0 0 56px;border:2px solid;border-radius:10px;background:#000;font-family:var(--mono);
+  font-size:22px;font-weight:600;cursor:pointer}
+.sign.plus{color:var(--green);border-color:var(--green)}
+.sign.minus{color:var(--red);border-color:var(--red)}
+.qcard{border:2px solid rgba(255,255,255,.6);border-radius:12px;padding:15px;transition:border-color .2s}
+.qcard.need{border-color:var(--red);animation:nudge .3s}
+@keyframes nudge{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+.q{font-size:17px;line-height:1.36;color:#fff;font-weight:500;margin:0 0 15px}
+.ticks{display:flex;gap:10px}
+.tickbox{flex:1;display:flex;align-items:center;justify-content:center;gap:9px;padding:13px 10px;background:#000;
+  border:2px solid rgba(255,255,255,.6);border-radius:10px;cursor:pointer}
+.box{width:20px;height:20px;border:2px solid #fff;border-radius:4px;display:grid;place-items:center;flex:0 0 auto}
+.box svg{width:13px;height:13px;opacity:0;transform:scale(.6);transition:all .15s;stroke:#fff}
+.tickbox[aria-checked=true] .box svg{opacity:1;transform:scale(1)}
+.tickbox b{font-size:16px;letter-spacing:.16em;text-transform:uppercase;font-weight:700}
+.tickbox.yes[aria-checked=true]{border-color:var(--green)}
+.tickbox.yes[aria-checked=true] .box{border-color:var(--green)}
+.tickbox.yes[aria-checked=true] b{color:var(--green)}
+.tickbox.yes[aria-checked=true] svg{stroke:var(--green)}
+.tickbox.no[aria-checked=true]{border-color:var(--red)}
+.tickbox.no[aria-checked=true] .box{border-color:var(--red)}
+.tickbox.no[aria-checked=true] b{color:var(--red)}
+.tickbox.no[aria-checked=true] svg{stroke:var(--red)}
+.save{width:100%;margin-top:18px;padding:17px;border-radius:11px;border:none;background:#fff;color:#000;
+  font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;cursor:pointer}
+.logHead{display:flex;justify-content:space-between;align-items:center;margin:26px 0 6px;
+  border-top:1px solid var(--dimmer);padding-top:14px}
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.1)}
+.row .d{font-family:var(--mono);font-size:13px;color:var(--dim)}
+.row .p{width:21px;height:21px;flex:0 0 auto;border:2px solid;border-radius:5px;display:grid;place-items:center}
+.row .p svg{width:13px;height:13px;stroke-width:3.5}
+.row .p.y{border-color:var(--green);color:var(--green)}
+.row .p.n{border-color:var(--red);color:var(--red)}
+.row .a{font-family:var(--mono);font-size:15px;font-weight:600;margin-left:auto;font-variant-numeric:tabular-nums}
+.row .a.up{color:var(--green)}.row .a.down{color:var(--red)}
+.row .x{background:none;border:none;color:var(--dimmer);font-size:19px;line-height:1;padding:0 2px;cursor:pointer}
+.empty{color:var(--dim);font-size:14px;padding:14px 0;line-height:1.5}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 34px);transform:translate(-50%,14px);
+  background:#fff;color:#000;padding:9px 18px;border-radius:100px;font-size:12px;font-weight:700;
+  letter-spacing:.18em;text-transform:uppercase;opacity:0;pointer-events:none;transition:all .25s;z-index:10}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+  <section class="screen landing" id="landing">
+    <div class="poster">
+      <svg class="chart" viewBox="0 0 336 155" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><line x1="13.5" y1="20" x2="13.5" y2="95" stroke="var(--pg)" stroke-width="2.2"/><rect x="8" y="25" width="11" height="45" fill="var(--pg)"/><line x1="33.5" y1="45" x2="33.5" y2="105" stroke="var(--pg)" stroke-width="2.2"/><rect x="28" y="55" width="11" height="30" fill="var(--pg)"/><line x1="53.5" y1="60" x2="53.5" y2="115" stroke="var(--pg)" stroke-width="2.2"/><rect x="48" y="70" width="11" height="30" fill="var(--pg)"/><line x1="73.5" y1="55" x2="73.5" y2="110" stroke="var(--pg)" stroke-width="2.2"/><rect x="68" y="62" width="11" height="38" fill="var(--pg)"/><line x1="93.5" y1="50" x2="93.5" y2="95" stroke="var(--pg)" stroke-width="2.2"/><rect x="88" y="68" width="11" height="10" fill="var(--pg)"/><line x1="113.5" y1="60" x2="113.5" y2="140" stroke="var(--pr)" stroke-width="2.2"/><rect x="108" y="75" width="11" height="55" fill="var(--pr)"/><line x1="133.5" y1="40" x2="133.5" y2="115" stroke="var(--pr)" stroke-width="2.2"/><rect x="128" y="55" width="11" height="20" fill="var(--pr)"/><line x1="153.5" y1="45" x2="153.5" y2="135" stroke="var(--pg)" stroke-width="2.2"/><rect x="148" y="60" width="11" height="50" fill="var(--pg)"/><line x1="173.5" y1="75" x2="173.5" y2="135" stroke="var(--pg)" stroke-width="2.2"/><rect x="168" y="95" width="11" height="25" fill="var(--pg)"/><line x1="193.5" y1="65" x2="193.5" y2="105" stroke="var(--pr)" stroke-width="2.2"/><rect x="188" y="80" width="11" height="15" fill="var(--pr)"/><line x1="213.5" y1="55" x2="213.5" y2="115" stroke="var(--pr)" stroke-width="2.2"/><rect x="208" y="68" width="11" height="37" fill="var(--pr)"/><line x1="233.5" y1="60" x2="233.5" y2="120" stroke="var(--pg)" stroke-width="2.2"/><rect x="228" y="70" width="11" height="35" fill="var(--pg)"/><line x1="253.5" y1="75" x2="253.5" y2="125" stroke="var(--pg)" stroke-width="2.2"/><rect x="248" y="98" width="11" height="7" fill="var(--pg)"/><line x1="273.5" y1="25" x2="273.5" y2="115" stroke="var(--pr)" stroke-width="2.2"/><rect x="268" y="40" width="11" height="60" fill="var(--pr)"/><line x1="293.5" y1="50" x2="293.5" y2="125" stroke="var(--pr)" stroke-width="2.2"/><rect x="288" y="108" width="11" height="7" fill="var(--pr)"/><line x1="313.5" y1="30" x2="313.5" y2="120" stroke="var(--pr)" stroke-width="2.2"/><rect x="308" y="55" width="11" height="60" fill="var(--pr)"/></svg>
+      <p class="quote">Trading doesn't just reveal your character, it also builds it if you stay in the game long enough.</p>
+    </div>
+    <button class="enter" id="enter" type="button">
+      <span class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg></span>
+      Swipe up to open
+    </button>
+  </section>
+
+  <section class="screen app">
+<div class="pager" id="pager">
+
+  <section class="page" id="regPage">
+    <div class="eyebrow">Session log</div>
+    <div class="p2title">Register result</div>
+
+    <div class="scroll">
+      <div class="field">
+        <div class="label">Account name</div>
+        <div class="amount">
+          <input type="text" id="acctName" placeholder="e.g. Topstep 1" autocomplete="off" maxlength="30">
+          <button class="mini" id="acctAdd" type="button">Save</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">Account</div>
+        <select id="acctSel"></select>
+        <button class="danger" id="acctDel" type="button">Delete account</button>
+      </div>
+
+      <div class="field">
+        <div class="label">Trading date</div>
+        <input type="date" id="date">
+      </div>
+
+      <div class="field">
+        <div class="label">Today's result</div>
+        <div class="amount">
+          <button class="sign plus" id="sign" type="button">+</button>
+          <input type="text" id="amount" inputmode="decimal" placeholder="0" autocomplete="off">
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="label">Process check &middot; required</div>
+        <div class="qcard" id="qcard">
+          <p class="q">Did you make a pre-trade plan today?<br>Did you set up your trading station risk management according to plan?<br>Did you stick to the plan throughout the session?</p>
+          <div class="ticks">
+            <div class="tickbox yes" id="tYes" role="checkbox" aria-checked="false" tabindex="0">
+              <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <b>Yes</b>
+            </div>
+            <div class="tickbox no" id="tNo" role="checkbox" aria-checked="false" tabindex="0">
+              <span class="box"><svg viewBox="0 0 24 24" fill="none" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+              <b>No</b>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button class="save" id="save" type="button">Save session</button>
+
+      <div class="logHead">
+        <div class="eyebrow" id="logAcct">No account</div>
+        <div class="eyebrow" id="discipline">Plan followed 0 / 0</div>
+      </div>
+      <div id="log"></div>
+    </div>
+  </section>
+</div>
+  </section>
+</div>
+
+<template id="gaugeTpl">
+  <section class="page gpage">
+    <div class="head">
+      <div>
+        <div class="eyebrow">150K Combine</div>
+        <div class="eyebrow acct">Account: <b class="acctName"></b></div>
+      </div>
+      <div class="eyebrow sessions">W1 &middot; 0 sessions</div>
+    </div>
+
+    <div class="gauge">
+      <div class="scale scaleL"></div>
+      <div class="cell">
+        <div class="cap"></div>
+        <div class="shell">
+          <div class="inner">
+            <div class="fill pos"></div>
+            <div class="fill neg"></div>
+            <div class="maxline"></div>
+            <div class="zero"></div>
+            <div class="hint">Add an account on the Register page &rarr;</div>
+          </div>
+        </div>
+      </div>
+      <div class="scale scaleR scaleR1" data-title="R1 · 4W"></div>
+      <div class="scale scaleR scaleR2" data-title="R2 · 8W"></div>
+    </div>
+
+    <div class="footer">
+      <div class="fLabel bigLabel">Profit</div>
+      <div class="fBig flat bigVal">$0</div>
+      <div class="fRow">
+        <div class="fCell">
+          <div class="k leftK">Left to 9k</div>
+          <div class="v left">$9,000</div>
+        </div>
+        <div class="fCell" style="text-align:center">
+          <div class="k">% left</div>
+          <div class="v amber leftPct">100%</div>
+        </div>
+        <div class="fCell" style="text-align:right">
+          <div class="k">Max loss</div>
+          <div class="v gold maxLoss">-$4,500</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</template>
+
+<div class="dots" id="dots"></div>
+<div class="toast" id="toast">Saved</div>
+
+<script>
+(function(){
+"use strict";
+var TOP=9000, BOT=-4500, ROUTES=[{cls:"scaleR1",weeks:4},{cls:"scaleR2",weeks:8}], MAXW=8, KEY="combine150k:v2";
+var db={accounts:[],selected:null,sessions:[]}, sign=1, plan=null, mem=null;
+
+async function load(){
+  try{ var v=localStorage.getItem(KEY); if(v) db=JSON.parse(v); }
+  catch(e){ if(mem) db=mem; }
+  db.accounts=db.accounts||[]; db.sessions=db.sessions||[];
+  if(db.accounts.indexOf(db.selected)<0) db.selected=db.accounts[0]||null;
+}
+async function persist(){ mem=db; try{ localStorage.setItem(KEY,JSON.stringify(db)); }catch(e){} }
+
+var TICK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+var CROSS='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+function money(n){ return (n<0?"-$":"$")+Math.abs(Math.round(n)).toLocaleString("en-US"); }
+function kLabel(v){ return (v<0?"-":"")+(Math.abs(v)/1000)+"k"; }
+function weekTarget(w,weeks){ return TOP*w/weeks; }        // even split of the target over the route
+function esc(s){ return String(s).replace(/[&<>"']/g,function(c){return "&#"+c.charCodeAt(0)+";";}); }
+function monday(d){ var x=new Date(d); var g=(x.getDay()+6)%7; x.setHours(0,0,0,0); x.setDate(x.getDate()-g); return x; }
+function sessionsOf(a){ return db.sessions.filter(function(e){return e.acct===a;}); }
+function currentWeek(list){
+  if(!list.length) return 1;
+  var first=monday(list.map(function(e){return e.date;}).sort()[0]);
+  var w=Math.floor((monday(new Date())-first)/6048e5)+1;
+  return Math.max(1,w);
+}
+function total(list){ return list.reduce(function(a,e){return a+e.amount;},0); }
+// trailing max loss: sits 4.5k under the highest closed day, locks at breakeven
+function threshold(list){
+  var run=0, peak=0;
+  list.slice().sort(function(a,b){return a.date<b.date?-1:1;}).forEach(function(e){
+    run+=e.amount; if(run>peak) peak=run;
+  });
+  return Math.min(peak,-BOT)+BOT;
+}
+
+// scale of a gauge: one account, or n accounts combined (net page, no week columns)
+function scaleFor(n,weeks){ return {top:TOP*n,bot:BOT*n,step:500*n,major:1500*n,weeks:weeks}; }
+function pct(s,v){ return (s.top-v)/(s.top-s.bot)*100; }
+
+function buildScales(page,s){
+  var h="";
+  page._s=s;
+  page.querySelector(".inner").style.setProperty("--zero",pct(s,0)+"%");
+  page.querySelector(".leftK").textContent="Left to "+kLabel(s.top);
+  for(var v=s.top; v>=s.bot; v-=s.step){
+    var major=(v%s.major===0);
+    h+='<div class="tick '+(major?"major":"")+'" style="top:'+pct(s,v)+'%"><div class="rule"></div>'+
+       '<label>'+kLabel(v)+'</label></div>';
+  }
+  page.querySelector(".scaleL").innerHTML=h;
+  if(!s.weeks){
+    Array.prototype.forEach.call(page.querySelectorAll(".scaleR"),function(el){el.remove();});
+    page.querySelector(".gauge").classList.add("noweeks");
+    return;
+  }
+  ROUTES.forEach(function(r){
+    h="";
+    for(var w=1;w<=r.weeks;w++){
+      h+='<div class="tick major" data-w="'+w+'" style="top:'+pct(s,weekTarget(w,r.weeks))+'%">'+
+         '<div class="rule"></div><label>W'+w+'</label></div>';
+    }
+    page.querySelector("."+r.cls).innerHTML=h;
+  });
+}
+
+// t = profit, thr = max-loss level, w = current week (null on the net page)
+function renderGauge(page,t,thr,w,headText){
+  var q=function(s){return page.querySelector(s);}, s=page._s;
+  var remaining=s.top-t, pctLeft=Math.max(0,remaining)/s.top*100;
+
+  q(".sessions").textContent=headText;
+
+  var buffer=t-thr;
+  q(".maxline").style.top=pct(s,thr)+"%";
+  var ml=q(".maxLoss");
+  ml.textContent=money(thr-t)+(thr===0?" · locked":"");
+  ml.className="v maxLoss "+(buffer<=0?"red":"gold");
+
+  q(".fill.pos").style.height=(t>0?Math.min(t,s.top)/(s.top-s.bot)*100:0)+"%";
+  q(".fill.neg").style.height=(t<0?Math.min(-t,-s.bot)/(s.top-s.bot)*100:0)+"%";
+
+  Array.prototype.forEach.call(page.querySelectorAll(".scaleR .tick"),function(el){
+    el.classList.toggle("now", +el.getAttribute("data-w")===Math.min(w,MAXW));
+  });
+
+  var big=q(".bigVal");
+  big.textContent=money(t);
+  big.className="fBig bigVal "+(t>0?"up":t<0?"down":"flat");
+  q(".bigLabel").textContent = t<0 ? "Drawdown" : "Profit";
+
+  q(".left").textContent=money(Math.max(0,remaining));
+  var lp=q(".leftPct");
+  lp.textContent=(remaining<=0?"0":pctLeft.toFixed(remaining>=1000?0:1))+"%";
+  lp.className="v leftPct "+(remaining<=0?"green":"amber");
+}
+
+// one gauge page per account (or a placeholder), inserted before the register page
+var pager=document.getElementById("pager"), regPage=document.getElementById("regPage"), tpl=document.getElementById("gaugeTpl");
+function buildPages(){
+  Array.prototype.forEach.call(pager.querySelectorAll(".gpage"),function(p){p.remove();});
+  var names=db.accounts.length?db.accounts:[null];
+  names.forEach(function(a){
+    var page=tpl.content.firstElementChild.cloneNode(true);
+    page.querySelector(".acctName").textContent=a===null?"none":a;
+    if(a===null) page.classList.add("none"); else page.setAttribute("data-acct",a);
+    pager.insertBefore(page,regPage);
+    buildScales(page,scaleFor(1,true));
+  });
+  // net of all accounts, last page
+  var net=tpl.content.firstElementChild.cloneNode(true);
+  net.classList.add("net");
+  net.querySelector(".acct").innerHTML='Net: <b>all accounts</b>';
+  pager.appendChild(net);
+  buildScales(net,scaleFor(Math.max(1,db.accounts.length),false));
+  var dh=""; for(var i=0;i<=names.length+1;i++) dh+='<div class="dot"></div>';
+  document.getElementById("dots").innerHTML=dh;
+  syncDots();
+}
+
+function renderAll(){
+  var netT=0, netThr=0;
+  Array.prototype.forEach.call(pager.querySelectorAll(".gpage:not(.net)"),function(p){
+    var a=p.getAttribute("data-acct"), list=a===null?[]:sessionsOf(a);
+    var t=total(list), thr=threshold(list), w=currentWeek(list);
+    netT+=t; netThr+=thr;
+    renderGauge(p,t,thr,w,"W"+Math.min(w,MAXW)+" · "+list.length+(list.length===1?" session":" sessions"));
+  });
+  var n=db.accounts.length;
+  renderGauge(pager.querySelector(".gpage.net"),netT,netThr,null,n+(n===1?" account":" accounts")+" · "+db.sessions.length+" sessions");
+
+  var sel=document.getElementById("acctSel");
+  sel.innerHTML=db.accounts.length ? db.accounts.map(function(a){
+    return '<option value="'+esc(a)+'"'+(a===db.selected?" selected":"")+'>'+esc(a)+'</option>';
+  }).join("") : '<option value="">No accounts yet</option>';
+  sel.disabled=!db.accounts.length;
+  document.getElementById("acctDel").disabled=!db.accounts.length;
+
+  var list=db.selected?sessionsOf(db.selected):[];
+  document.getElementById("logAcct").textContent=db.selected||"No account";
+  var yes=list.filter(function(e){return e.plan;}).length;
+  document.getElementById("discipline").textContent="Plan followed "+yes+" / "+list.length;
+
+  var log=document.getElementById("log");
+  if(!db.selected){ log.innerHTML='<div class="empty">Add an account above to start logging sessions.</div>'; return; }
+  if(!list.length){ log.innerHTML='<div class="empty">No sessions yet. Fill in the date, the result and the process check above.</div>'; return; }
+  log.innerHTML=list.slice().sort(function(a,b){return a.date<b.date?1:-1;}).map(function(e){
+    return '<div class="row"><div class="d">'+e.date.slice(5).replace("-","/")+'</div>'+
+      '<div class="p '+(e.plan?"y":"n")+'">'+(e.plan?TICK:CROSS)+'</div>'+
+      '<div class="a '+(e.amount>=0?"up":"down")+'">'+(e.amount>0?"+":"")+money(e.amount)+'</div>'+
+      '<button class="x" data-del="'+e.date+'">×</button></div>';
+  }).join("");
+  Array.prototype.forEach.call(log.querySelectorAll("[data-del]"),function(b){
+    b.addEventListener("click",function(){
+      var d=b.getAttribute("data-del");
+      db.sessions=db.sessions.filter(function(e){return !(e.acct===db.selected&&e.date===d);});
+      persist(); renderAll(); toast("Removed");
+    });
+  });
+}
+
+function pageIndexOf(a){
+  var pages=pager.querySelectorAll(".page");
+  for(var i=0;i<pages.length;i++) if(pages[i].getAttribute("data-acct")===a) return i;
+  return 0;
+}
+
+var tt;
+function toast(m){var el=document.getElementById("toast");el.textContent=m;el.classList.add("on");
+  clearTimeout(tt);tt=setTimeout(function(){el.classList.remove("on");},1600);}
+
+// accounts
+var nameIn=document.getElementById("acctName");
+function addAccount(){
+  var n=nameIn.value.trim().replace(/\s+/g," ");
+  if(!n){ toast("Enter a name"); return; }
+  if(db.accounts.some(function(a){return a.toLowerCase()===n.toLowerCase();})){ toast("Name already exists"); return; }
+  db.accounts.push(n); db.selected=n;
+  persist(); buildPages(); renderAll();
+  nameIn.value=""; nameIn.blur();
+  pager.scrollTo({left:regPage.offsetLeft});
+  toast("Account added");
+}
+document.getElementById("acctAdd").addEventListener("click",addAccount);
+nameIn.addEventListener("keydown",function(e){ if(e.key==="Enter") addAccount(); });
+document.getElementById("acctSel").addEventListener("change",function(e){
+  db.selected=e.target.value||null; persist(); renderAll();
+});
+document.getElementById("acctDel").addEventListener("click",function(){
+  var a=db.selected; if(!a) return;
+  if(!confirm('Delete "'+a+'" and all its sessions?')) return;
+  db.accounts=db.accounts.filter(function(x){return x!==a;});
+  db.sessions=db.sessions.filter(function(e){return e.acct!==a;});
+  db.selected=db.accounts[0]||null;
+  persist(); buildPages(); renderAll();
+  pager.scrollTo({left:regPage.offsetLeft});
+  toast("Deleted");
+});
+
+function setPlan(v){ plan=v;
+  if(v!==null) document.getElementById("qcard").classList.remove("need");
+  document.getElementById("tYes").setAttribute("aria-checked",v===true);
+  document.getElementById("tNo").setAttribute("aria-checked",v===false); }
+document.getElementById("tYes").addEventListener("click",function(){setPlan(plan===true?null:true);});
+document.getElementById("tNo").addEventListener("click",function(){setPlan(plan===false?null:false);});
+
+var signBtn=document.getElementById("sign");
+signBtn.addEventListener("click",function(){ sign=-sign;
+  signBtn.textContent=sign>0?"+":"−"; signBtn.className="sign "+(sign>0?"plus":"minus"); });
+
+document.getElementById("save").addEventListener("click",function(){
+  var a=db.selected;
+  var d=document.getElementById("date").value;
+  var raw=document.getElementById("amount").value.replace(/[^\d.,-]/g,"").replace(",",".");
+  var n=parseFloat(raw);
+  if(!a){ toast("Add an account first"); nameIn.focus(); return; }
+  if(!d){ toast("Pick a date"); return; }
+  if(isNaN(n)){ toast("Enter a result"); return; }
+  if(plan===null){ var qc=document.getElementById("qcard"); qc.classList.remove("need");
+    void qc.offsetWidth; qc.classList.add("need"); qc.scrollIntoView({behavior:"smooth",block:"center"});
+    toast("Answer yes or no"); return; }
+  var same=function(e){return e.acct===a&&e.date===d;};
+  var existed=db.sessions.some(same);
+  db.sessions=db.sessions.filter(function(e){return !same(e);});
+  db.sessions.push({acct:a,date:d,amount:Math.abs(n)*sign,plan:plan});
+  persist(); renderAll();
+  document.getElementById("amount").value=""; setPlan(null);
+  document.getElementById("amount").blur();
+  toast(existed?"Updated":"Saved");
+  pager.scrollTo({left:pageIndexOf(a)*pager.clientWidth,behavior:"smooth"});
+});
+
+var deck=document.getElementById("deck"), dots=document.getElementById("dots");
+document.getElementById("enter").addEventListener("click",function(){
+  deck.scrollTo({top:deck.clientHeight,behavior:"smooth"});
+});
+deck.addEventListener("scroll",function(){
+  dots.classList.toggle("on", deck.scrollTop > deck.clientHeight*0.6);
+});
+
+// swiping onto an account's gauge selects it for the register page
+function syncDots(){
+  var i=Math.round(pager.scrollLeft/pager.clientWidth);
+  Array.prototype.forEach.call(dots.children,function(d,k){ d.className="dot"+(k===i?" on":""); });
+  var a=(pager.querySelectorAll(".page")[i]||regPage).getAttribute("data-acct");
+  if(a&&a!==db.selected){ db.selected=a; persist(); renderAll(); }
+}
+pager.addEventListener("scroll",syncDots);
+
+(async function(){
+  var now=new Date();
+  document.getElementById("date").value=new Date(now.getTime()-now.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+  await load(); buildPages(); renderAll();
+})();
+})();
+</script>
+</body>
+</html>
