@@ -120,9 +120,10 @@ input{-webkit-user-select:text;user-select:text}
 .fBig{font-family:var(--mono);font-size:42px;font-weight:600;line-height:1;letter-spacing:-.035em;
   font-variant-numeric:tabular-nums;margin-top:5px}
 .fBig.up{color:var(--green)}.fBig.down{color:var(--red)}.fBig.flat{color:#fff}
-.fRow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;gap:10px}
+.fRow{display:flex;justify-content:space-between;align-items:flex-start;margin-top:16px;gap:10px}
 .fCell .k{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:600}
 .fCell .v{font-family:var(--mono);font-size:17px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
+.fCell .perDayK{margin-top:10px}
 .v.amber{color:var(--amber)}.v.gold{color:#E0AE22}.v.green{color:var(--green)}.v.red{color:var(--red)}
 
 /* ---------- page 2 ---------- */
@@ -308,6 +309,8 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.75
         <div class="fCell" style="text-align:center">
           <div class="k">% left</div>
           <div class="v amber leftPct">100%</div>
+          <div class="k perDayK">Per day &middot; 20d left</div>
+          <div class="v perDay">$450</div>
         </div>
         <div class="fCell" style="text-align:right">
           <div class="k">Max loss</div>
@@ -324,7 +327,7 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.75
 <script>
 (function(){
 "use strict";
-var TOP=9000, BOT=-4500, ROUTES=[{cls:"scaleR1",weeks:4},{cls:"scaleR2",weeks:8}], MAXW=8, KEY="combine150k:v2";
+var TOP=9000, BOT=-4500, DAYS=20, ROUTES=[{cls:"scaleR1",weeks:4},{cls:"scaleR2",weeks:8}], MAXW=8, KEY="combine150k:v2";
 var db={accounts:[],selected:null,sessions:[]}, sign=1, plan=null, mem=null;
 
 async function load(){
@@ -350,6 +353,23 @@ function currentWeek(list){
   return Math.max(1,w);
 }
 function total(list){ return list.reduce(function(a,e){return a+e.amount;},0); }
+function localDate(s){ var p=s.split("-"); return new Date(+p[0],p[1]-1,+p[2]); }
+function isoToday(){ var n=new Date(); return new Date(n.getTime()-n.getTimezoneOffset()*6e4).toISOString().slice(0,10); }
+// trading days (Mon-Fri) from a to b, both included
+function weekdays(a,b){
+  var n=0, d=new Date(a);
+  while(d<=b){ var g=d.getDay(); if(g!==0&&g!==6) n++; d.setDate(d.getDate()+1); }
+  return n;
+}
+// trading days left of DAYS, counted from the first registered trade;
+// today counts as used only once a result is registered for today
+function daysLeft(list){
+  if(!list.length) return DAYS;
+  var dates=list.map(function(e){return e.date;}).sort(), today=isoToday();
+  var end=localDate(today);
+  if(dates.indexOf(today)<0) end.setDate(end.getDate()-1);
+  return Math.max(0,DAYS-weekdays(localDate(dates[0]),end));
+}
 // trailing max loss: sits 4.5k under the highest closed day, locks at breakeven
 function threshold(list){
   var run=0, peak=0;
@@ -389,8 +409,8 @@ function buildScales(page,s){
   });
 }
 
-// t = profit, thr = max-loss level, w = current week (null on the net page)
-function renderGauge(page,t,thr,w,headText){
+// t = profit, thr = max-loss level, w = current week, dl = trading days left (w, dl null on the net page)
+function renderGauge(page,t,thr,w,headText,dl){
   var q=function(s){return page.querySelector(s);}, s=page._s;
   var remaining=s.top-t, pctLeft=Math.max(0,remaining)/s.top*100;
 
@@ -418,6 +438,15 @@ function renderGauge(page,t,thr,w,headText){
   var lp=q(".leftPct");
   lp.textContent=(remaining<=0?"0":pctLeft.toFixed(remaining>=1000?0:1))+"%";
   lp.className="v leftPct "+(remaining<=0?"green":"amber");
+
+  // profit needed per remaining trading day to reach the target
+  if(dl!=null){
+    var pd=q(".perDay");
+    q(".perDayK").textContent="Per day · "+dl+"d left";
+    if(remaining<=0){ pd.textContent="Done"; pd.className="v perDay green"; }
+    else if(dl===0){ pd.textContent=money(remaining); pd.className="v perDay red"; }
+    else { pd.textContent=money(remaining/dl); pd.className="v perDay"; }
+  }
 }
 
 // one gauge page per account (or a placeholder), inserted before the register page
@@ -449,7 +478,7 @@ function renderAll(){
     var a=p.getAttribute("data-acct"), list=a===null?[]:sessionsOf(a);
     var t=total(list), thr=threshold(list), w=currentWeek(list);
     netT+=t; netThr+=thr;
-    renderGauge(p,t,thr,w,"W"+Math.min(w,MAXW)+" · "+list.length+(list.length===1?" session":" sessions"));
+    renderGauge(p,t,thr,w,"W"+Math.min(w,MAXW)+" · "+list.length+(list.length===1?" session":" sessions"),daysLeft(list));
   });
   var n=db.accounts.length;
   renderGauge(pager.querySelector(".gpage.net"),netT,netThr,null,n+(n===1?" account":" accounts")+" · "+db.sessions.length+" sessions");
