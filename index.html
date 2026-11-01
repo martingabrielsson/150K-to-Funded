@@ -120,10 +120,10 @@ input{-webkit-user-select:text;user-select:text}
 .fBig{font-family:var(--mono);font-size:42px;font-weight:600;line-height:1;letter-spacing:-.035em;
   font-variant-numeric:tabular-nums;margin-top:5px}
 .fBig.up{color:var(--green)}.fBig.down{color:var(--red)}.fBig.flat{color:#fff}
-.fRow{display:flex;justify-content:space-between;align-items:flex-start;margin-top:16px;gap:10px}
+.fRow{display:flex;justify-content:space-between;align-items:flex-end;margin-top:16px;gap:10px}
 .fCell .k{font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);font-weight:600}
 .fCell .v{font-family:var(--mono);font-size:17px;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}
-.fCell .perDayK{margin-top:10px}
+.fCell .perDay{margin-bottom:10px}
 .v.amber{color:var(--amber)}.v.gold{color:#E0AE22}.v.green{color:var(--green)}.v.red{color:var(--red)}
 
 /* ---------- page 2 ---------- */
@@ -303,14 +303,14 @@ input[type=date]::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.75
       <div class="fBig flat bigVal">$0</div>
       <div class="fRow">
         <div class="fCell">
+          <div class="k perDayK">Per day &middot; 20d left</div>
+          <div class="v perDay">$450</div>
           <div class="k leftK">Left to 9k</div>
           <div class="v left">$9,000</div>
         </div>
         <div class="fCell" style="text-align:center">
           <div class="k">% left</div>
           <div class="v amber leftPct">100%</div>
-          <div class="k perDayK">Per day &middot; 20d left</div>
-          <div class="v perDay">$450</div>
         </div>
         <div class="fCell" style="text-align:right">
           <div class="k">Max loss</div>
